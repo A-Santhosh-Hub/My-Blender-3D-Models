@@ -4,19 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>My 3D Models</title>
-  <link rel="icon" type="image/png" href="ico.png" />
+  <link rel="icon" href="ico.png" type="image/png" />
   <link rel="stylesheet" href="as/style.css" />
-  <link rel="icon" type="image/png" href="ico.png" />
-  <!-- Load model-viewer -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-
 </head>
 <body>
   <header>
     <button id="backHomeBtn" onclick="location.href='https://santhosh2025.neocities.org/profile/'">← Back Home</button>
     <h1>My Blender 3D Models</h1>
+    
     <input type="text" id="search" placeholder="Search models..." />
+    
+    <label class="switch">
+      <input type="checkbox" id="darkToggle">
+      <span class="slider"></span>
+    </label>
   </header>
 
   <nav>
@@ -25,6 +27,16 @@
     <button data-filter="city">City</button>
     <button data-filter="Funny">Funny</button>
   </nav>
+<!-- Modal Viewer -->
+<div id="modelModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <model-viewer id="modalModel" src="" alt="Model Viewer"
+      auto-rotate camera-controls background-color="#111"
+      style="width: 100%; height: 80vh;">
+    </model-viewer>
+  </div>
+</div>
 
   <main class="gallery">
     <!-- Replace model paths with your own .glb files in the models folder -->
