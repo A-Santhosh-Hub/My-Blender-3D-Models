@@ -1,241 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My 3D Models</title>
-  <link rel="icon" href="ico.png" type="image/png" />
-  <link rel="stylesheet" href="as/style.css" />
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Model Showcase</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Dark background */
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        #ui-container {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Allow clicks to pass through to the canvas */
+        }
+        #ui-container > * {
+            pointer-events: auto; /* Re-enable pointer events for UI elements */
+        }
+        .btn {
+            background-color: rgba(31, 41, 55, 0.7); /* Semi-transparent dark gray */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn:hover {
+            background-color: rgba(55, 65, 81, 0.8);
+        }
+        /* Loading Spinner */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #3b82f6; /* Blue */
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+        }
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        /* Custom scrollbar for model selector */
+        .model-selector-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .model-selector-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .model-selector-container::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.7);
+            border-radius: 10px;
+        }
+        .model-selector-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 1);
+        }
+    </style>
 </head>
-<body>
-  <header>
-    <button id="backHomeBtn" onclick="location.href='https://santhosh2025.neocities.org/profile/'">← Back Home</button>
-    <h1>My Blender 3D Models</h1>
+<body class="text-white overflow-hidden">
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Loading Spinner -->
+    <div id="loader" class="loader hidden"></div>
+
+    <!-- UI Container -->
+    <div id="ui-container" class="relative w-full h-screen p-4 md:p-6 flex flex-col justify-between">
+        <!-- Header -->
+        <header class="flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold tracking-wider">3D SHOWCASE</h1>
+            <div class="flex items-center space-x-4">
+                <label for="model-upload" class="btn text-white font-semibold py-2 px-5 rounded-lg shadow-lg cursor-pointer transition-all duration-300 ease-in-out hover:shadow-blue-500/50">
+                    Upload .glb
+                </label>
+                <input type="file" id="model-upload" accept=".glb" class="hidden">
+                 <button id="fullscreen-btn" class="btn text-white font-semibold p-2 rounded-lg shadow-lg transition-all duration-300 ease-in-out hover:shadow-blue-500/50 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 110 2H5v3a1 1 0 11-2 0V4zm14 0a1 1 0 00-1-1h-4a1 1 0 100 2h3v3a1 1 0 102 0V4zm-1 11h-3a1 1 0 100 2h4a1 1 0 001-1v-4a1 1 0 10-2 0v3zM5 15h3a1 1 0 100-2H4a1 1 0 00-1 1v4a1 1 0 102 0v-3z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Footer / Model Selector -->
+        <footer class="w-full flex justify-center items-center">
+             <div id="model-selector" class="model-selector-container w-full max-w-4xl bg-gray-800/50 backdrop-filter backdrop-blur-md p-3 rounded-xl overflow-x-auto whitespace-nowrap">
+                <!-- Model buttons will be injected here by JavaScript -->
+             </div>
+        </footer>
+    </div>
     
-    <input type="text" id="search" placeholder="Search models..." />
-    
-    <label class="switch">
-      <input type="checkbox" id="darkToggle">
-      <span class="slider"></span>
-    </label>
-  </header>
+    <!-- Three.js and GLTFLoader -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
 
-  <nav>
-    <button data-filter="all">All</button>
-    <button data-filter="Mobil">Mobile</button>
-    <button data-filter="city">City</button>
-    <button data-filter="Funny">Funny</button>
-  </nav>
-<!-- Modal Viewer -->
-<div id="modelModal" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <model-viewer id="modalModel" src="" alt="Model Viewer"
-      auto-rotate camera-controls background-color="#111"
-      style="width: 100%; height: 80vh;">
-    </model-viewer>
-  </div>
-</div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-  <main class="gallery">
-    <!-- Replace model paths with your own .glb files in the models folder -->
-
-    <div class="card" data-category="city">
-      <model-viewer src="models/car1.glb" alt="1975 Porsche"
-        auto-rotate camera-controls background-color="#111"
-        style="width: 100%; height: 300px;">
-      </model-viewer>
-      <h3>City</h3>
-    </div>
-
-    <div class="card" data-category="Mobil">
-      <model-viewer src="models/MOBIL.glb" alt="Cyberpunk Hover Car"
-        auto-rotate camera-controls background-color="#111"
-        style="width: 100%; height: 300px;">
-      </model-viewer>
-      <h3>Mobile</h3>
-    </div>
-
-    <div class="card" data-category="city">
-      <model-viewer src="models/house.glb" alt="City Scene"
-        auto-rotate camera-controls background-color="#111"
-        style="width: 100%; height: 300px;">
-      </model-viewer>
-      <h3>House Block</h3>
-    </div>
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Sword.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Sword</h3>
-</div>
+        // --- Model Data ---
+        const GITHUB_REPO_URL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
+        const defaultModels = [
+         // --- Add Model Data ---
+                { name: 'Mobile ', url: 'models/New_Mobile.glb' },
+                { name: 'Laptop ', url: 'models/laptop.glb' },
+                { name: 'VLC ', url: 'models/robot.glb' },
+                { name: 'S24', url: 'models/s24.glb' },
+                { name: 'Sword ', url: 'models/Sword.glb' },        
+                { name: 'Shovel Dig Digging  ', url: 'models/Digtool.glb' },
+                { name: 'Fan ', url: 'models/Fan.glb' },
+                { name: 'House ', url: 'models/house test.glb' },
+                { name: 'THE CLASS', url: 'models/THE CLASS.glb' },
+                { name: 'THE ROOM', url: 'models/THE ROOM.glb' },
+                //{ name: 'The Village', url: 'models/villag.glb' },
+                { name: 'Wind Mill', url: 'models/wind mill.glb' },
+                { name: 'Electric current post', url: 'models/Electric current post.glb' },
+                { name: 'Water Tank', url: 'models/Tank.glb' },
+                // { name: 'Light House ', url: 'models/lightouse.glb' }
+                
+               
+        // --- Add Model Data ---
 
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/dark.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Text</h3>
-</div>
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/KATHTHI.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>A knife</h3>
-</div>
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/THLIGHT.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>A Torch Light</h3>
-</div>
-<!---Add Models -->
-<div class="card" data-category="city">
-  <model-viewer src="models/untitled.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>City Block</h3>
-</div>
+        ];
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/CLASS.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Class Block</h3>
-</div>
+        // --- Basic Setup ---
+        const canvasContainer = document.getElementById('canvas-container');
+        const loaderElement = document.getElementById('loader');
+        const modelSelector = document.getElementById('model-selector');
+        let scene, camera, renderer, controls, model;
 
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/safe.glb" alt="Funny Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Traffic Cones</h3>
-</div>
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1, 5);
 
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            canvasContainer.appendChild(renderer.domElement);
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Loptop.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Loptop</h3>
-</div>
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 50;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Loptop_001.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Loptop-II</h3>
-</div>
+            // --- Lighting ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/charger.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Mobile Charger</h3>
-</div>
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0xADD8E6, 2, 100);
+            pointLight.position.set(-5, -5, 5);
+            scene.add(pointLight);
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/house test1.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>House_II</h3>
-</div>
+            // --- UI Setup ---
+            setupModelSelector();
 
+            // --- Load Initial Model ---
+            loadModel(defaultModels[0].url);
 
+            // --- Event Listeners ---
+            window.addEventListener('resize', onWindowResize, false);
+            document.getElementById('model-upload').addEventListener('change', onFileSelect);
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Leef_31.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Leef</h3>
-</div>
+            animate();
+        }
 
+        function setupModelSelector() {
+            defaultModels.forEach(modelData => {
+                const button = document.createElement('button');
+                button.className = 'inline-block text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mx-1 flex-shrink-0';
+                button.textContent = modelData.name;
+                button.addEventListener('click', () => loadModel(modelData.url));
+                modelSelector.appendChild(button);
+            });
+        }
 
+        function loadModel(url) {
+            const loader = new GLTFLoader();
+            loaderElement.classList.remove('hidden');
+            
+            if (model) {
+                scene.remove(model);
+            }
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Fan.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Table Fan</h3>
-</div>
+            loader.load(url, (gltf) => {
+                model = gltf.scene;
 
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = 3 / maxDim;
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/Scall.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>Scales</h3>
-</div>
+                model.scale.set(scale, scale, scale);
+                model.position.sub(center.multiplyScalar(scale));
+                
+                scene.add(model);
+                loaderElement.classList.add('hidden');
+            }, undefined, (error) => {
+                console.error(error);
+                alert('An error happened while loading the model.');
+                loaderElement.classList.add('hidden');
+            });
+        }
 
-<!---Add Models -->
-<div class="card" data-category="Funny">
-  <model-viewer src="models/2022.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>The GAMER</h3>
-</div>
+        function onFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                loadModel(url);
+            }
+        }
 
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-<!---Add Models -->
-<div class="card" data-category="Mobil">
-  <model-viewer src="models/S24.glb" alt="City Scene"
-    auto-rotate camera-controls background-color="#111"
-    style="width: 100%; height: 300px;">
-  </model-viewer>
-  <h3>SAMAUNG S24</h3>
-</div>
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
 
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  </main>
-
-  <script src="as/script.js"></script>
+        init();
+    </script>
 </body>
 </html>
