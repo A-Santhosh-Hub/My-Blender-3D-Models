@@ -37,5 +37,5 @@ It allows users to upload `.glb` (GLTF binary) 3D model files — commonly expor
 - JavaScript (WebGL 3D viewer)
 - Hosted on **GitHub Pages**
 [ https://a-santhosh-hub.github.io/My-Blender-3D-Models/ ]
-![image alt] ()
+![image alt] (https://github.com/A-Santhosh-Hub/My-Blender-3D-Models/blob/main/as/Screenshot%202026-01-10%20142949.png)
 
