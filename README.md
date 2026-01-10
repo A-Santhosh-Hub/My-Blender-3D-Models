@@ -31,11 +31,16 @@ It allows users to upload `.glb` (GLTF binary) 3D model files — commonly expor
 
 ---
 
-### 📦 Built With
+### 🛠️ Built With
 
-- HTML/CSS
-- JavaScript (WebGL 3D viewer)
+- HTML & CSS  
+- JavaScript (WebGL 3D Viewer)  
 - Hosted on **GitHub Pages**
-[ https://a-santhosh-hub.github.io/My-Blender-3D-Models/ ]
-![image alt] (https://github.com/A-Santhosh-Hub/My-Blender-3D-Models/blob/main/as/Screenshot%202026-01-10%20142949.png)
 
+🔗 Live Demo: https://a-santhosh-hub.github.io/My-Blender-3D-Models/
+
+---
+
+### 📸 Preview
+
+![3D Model Viewer Screenshot](https://github.com/A-Santhosh-Hub/My-Blender-3D-Models/blob/main/as/Screenshot%202026-01-10%20142949.png)
