@@ -21,7 +21,7 @@ It allows users to upload `.glb` (GLTF binary) 3D model files — commonly expor
 3. Choose a `.glb` file.  
 4. Explore the 3D model on screen.
 
----
+----
 
 ### 🧠 Ideal For
 
