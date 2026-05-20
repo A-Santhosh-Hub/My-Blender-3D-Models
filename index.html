@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/177222217">
+     <link rel="icon" type="image/png" href="https://avatars.githubusercontent.com/u/177222217">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -468,11 +468,9 @@
             let hasMoved = false;
 
             function onDragStart(e) {
-                if (e.type === 'touchstart') e.preventDefault(); // Prevent touch scrolling
-                
+                // Removed preventDefault here so the browser can register 'clicks' on touch screens
                 isDraggingZen = true;
                 hasMoved = false;
-                zenBtn.classList.add('dragging');
                 
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -500,13 +498,16 @@
                 const dx = clientX - dragStartX;
                 const dy = clientY - dragStartY;
 
-                // If moved more than a few pixels, consider it a drag
-                if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                // If moved more than a few pixels, consider it a drag (not a tap)
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
                     hasMoved = true;
+                    zenBtn.classList.add('dragging');
                 }
 
                 if (hasMoved) {
-                    e.preventDefault(); 
+                    // Prevent page scrolling ONLY when we know it's a drag
+                    if (e.cancelable) e.preventDefault(); 
+                    
                     let newX = btnStartX + dx;
                     let newY = btnStartY + dy;
 
@@ -525,12 +526,12 @@
             function onDragEnd(e) {
                 if (!isDraggingZen) return;
                 isDraggingZen = false;
-                zenBtn.classList.remove('dragging');
+                setTimeout(() => zenBtn.classList.remove('dragging'), 50);
             }
 
-            // Attach listeners
+            // Attach listeners (passive: true allows default touch behaviors like clicking to work)
             zenBtn.addEventListener('mousedown', onDragStart);
-            zenBtn.addEventListener('touchstart', onDragStart, { passive: false });
+            zenBtn.addEventListener('touchstart', onDragStart, { passive: true });
             
             window.addEventListener('mousemove', onDragMove, { passive: false });
             window.addEventListener('touchmove', onDragMove, { passive: false });
@@ -541,9 +542,11 @@
             // Handle Clicks separately
             zenBtn.addEventListener('click', (e) => {
                 if (hasMoved) {
+                    // It was a drag, ignore the click
                     e.preventDefault();
                     e.stopPropagation();
                 } else {
+                    // It was a tap/click! Trigger Zen Mode
                     toggleZenMode();
                 }
             });
