@@ -3,53 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Model Showcase</title>
-     <link rel="icon" type="image/png" href="ico.png" />
+    <title>3D Model Showcase Pro</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #111827; /* Dark background Is Good for this */
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f1115; /* Deeper dark background */
+            background-image: radial-gradient(circle at 50% 50%, #1a1e27 0%, #0f1115 100%);
+            margin: 0;
+            overflow: hidden;
         }
         #canvas-container {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1;
         }
-        #ui-container {
-            position: relative;
-            z-index: 10;
-            pointer-events: none; /* Allow clicks to pass through to the canvas */
-        }
-        #ui-container > * {
-            pointer-events: auto; /* Re-enable pointer events for UI elements */
-        }
-        .btn {
-            background-color: rgba(31, 41, 55, 0.7); /* Semi-transparent dark gray */
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn:hover {
-            background-color: rgba(55, 65, 81, 0.8);
-        }
-        /* Loading Spinner */
+        /* Loading Spinner - OriginOS Style */
         .loader {
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
-            border: 5px solid rgba(255, 255, 255, 0.2);
-            border-top-color: #3b82f6; /* Blue */
-            animation: spin 1s linear infinite;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-left-color: #3b82f6; 
+            border-right-color: #8b5cf6;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -59,58 +46,218 @@
         @keyframes spin {
             to { transform: translate(-50%, -50%) rotate(360deg); }
         }
-        /* Custom scrollbar for model selector */
+        /* Custom scrollbar - Hidden */
         .model-selector-container::-webkit-scrollbar {
-            height: 8px;
+            height: 0px; 
+            display: none; 
         }
-        .model-selector-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+        .model-selector-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        .model-selector-container::-webkit-scrollbar-thumb {
-            background: rgba(59, 130, 246, 0.7);
-            border-radius: 10px;
+        
+        /* Spring Animations */
+        @keyframes slideInDown {
+            0% { transform: translate(-50%, -150%); opacity: 0; }
+            70% { transform: translate(-50%, 10%); opacity: 1; }
+            100% { transform: translate(-50%, 0); opacity: 1; }
         }
-        .model-selector-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(59, 130, 246, 1);
+        .toast-enter {
+            animation: slideInDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes slideInRight {
+            0% { transform: translateX(150%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        .toolbar-enter {
+            animation: slideInRight 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes popUp {
+            0% { transform: scale(0.8) translate(-50%, 50%); opacity: 0; }
+            100% { transform: scale(1) translate(-50%, 0); opacity: 1; }
+        }
+        .anim-ctrl-enter {
+            animation: popUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        /* Drag cursors */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing !important; }
+
+        /* Tooltip styling */
+        .tool-btn { position: relative; }
+        .tool-btn:hover .tooltip { opacity: 1; visibility: visible; transform: translate(-100%, -50%) scale(1); }
+        .tooltip {
+            position: absolute;
+            right: 120%;
+            top: 50%;
+            transform: translate(-90%, -50%) scale(0.9);
+            background: rgba(0,0,0,0.8);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        
+        /* Zen Mode UI Hiding */
+        .ui-hidden .hideable {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: scale(0.95) !important;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .hideable {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
     </style>
 </head>
-<body class="text-white overflow-hidden">
+<body class="text-white selection:bg-blue-500/30">
 
-    <!-- 3D Canvas Container -->
+    <!-- 3D Canvas -->
     <div id="canvas-container"></div>
 
     <!-- Loading Spinner -->
-    <div id="loader" class="loader hidden"></div>
+    <div id="loader" class="loader hidden shadow-[0_0_40px_rgba(59,130,246,0.4)]"></div>
+
+    <!-- Error Toast -->
+    <div id="error-toast" class="hidden absolute top-24 left-1/2 transform -translate-x-1/2 z-50 bg-red-500/90 backdrop-blur-2xl border border-red-400/30 text-white px-5 py-3 rounded-full shadow-[0_10px_40px_rgba(239,68,68,0.4)] flex items-center gap-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <span id="error-message" class="font-medium text-sm">An error occurred.</span>
+        <button onclick="document.getElementById('error-toast').classList.add('hidden')" class="ml-2 bg-white/20 hover:bg-white/30 rounded-full p-1 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+    </div>
 
     <!-- UI Container -->
-    <div id="ui-container" class="relative w-full h-screen p-4 md:p-6 flex flex-col justify-between">
-        <!-- Header -->
-        <header class="flex justify-between items-center">
-            <h1 class="text-xl md:text-2xl font-bold tracking-wider">3D SHOWCASE</h1>
-            <div class="flex items-center space-x-4">
-                <label for="model-upload" class="btn text-white font-semibold py-2 px-5 rounded-lg shadow-lg cursor-pointer transition-all duration-300 ease-in-out hover:shadow-blue-500/50">
-                    Upload .glb
-                </label>
-                <input type="file" id="model-upload" accept=".glb" class="hidden">
-                 <button id="fullscreen-btn" class="btn text-white font-semibold p-2 rounded-lg shadow-lg transition-all duration-300 ease-in-out hover:shadow-blue-500/50 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 110 2H5v3a1 1 0 11-2 0V4zm14 0a1 1 0 00-1-1h-4a1 1 0 100 2h3v3a1 1 0 102 0V4zm-1 11h-3a1 1 0 100 2h4a1 1 0 001-1v-4a1 1 0 10-2 0v3zM5 15h3a1 1 0 100-2H4a1 1 0 00-1 1v4a1 1 0 102 0v-3z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </div>
-        </header>
+    <div id="ui-container" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between overflow-hidden">
+        
+        <!-- Top Section: Header & Stats -->
+        <div class="flex justify-between items-start w-full px-4 md:px-8 mt-6 hideable">
+            
+            <!-- Left Side Widgets -->
+            <div class="flex flex-col gap-3">
+                <!-- Developer Credit -->
+                <div class="pointer-events-auto bg-white/5 backdrop-blur-2xl border border-white/10 px-4 py-1.5 rounded-full shadow-lg w-max transition-all hover:bg-white/10">
+                    <span class="text-[10px] md:text-xs text-white/70 font-medium tracking-wide">
+                        Developed By <a href="https://a-santhosh-hub.github.io/in/" target="_blank" rel="noopener noreferrer" class="text-blue-400 font-bold hover:text-blue-300 transition-colors drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">Santhosh</a>
+                    </span>
+                </div>
 
-        <!-- Footer / Model Selector -->
-        <footer class="w-full flex justify-center items-center">
-             <div id="model-selector" class="model-selector-container w-full max-w-4xl bg-gray-800/50 backdrop-filter backdrop-blur-md p-3 rounded-xl overflow-x-auto whitespace-nowrap">
-                <!-- Model buttons will be injected here by JavaScript -->
+                <!-- Model Stats (Blender Style Info) -->
+                <div id="model-stats" class="pointer-events-auto bg-white/5 backdrop-blur-2xl border border-white/10 p-3 rounded-2xl shadow-lg flex flex-col gap-1 hidden">
+                    <div class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Scene Info</div>
+                    <div class="text-sm font-medium"><span class="text-gray-400 mr-2">Tris:</span><span id="stat-tris">0</span></div>
+                    <div class="text-sm font-medium"><span class="text-gray-400 mr-2">Objs:</span><span id="stat-objs">0</span></div>
+                </div>
+            </div>
+
+            <!-- Header Panel -->
+            <header class="pointer-events-auto flex-1 max-w-xl mx-auto bg-white/5 backdrop-blur-3xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-full px-4 py-3 flex justify-between items-center transition-all duration-300 hover:bg-white/10 ml-4 md:ml-auto">
+                <h1 class="text-white text-sm md:text-base font-bold tracking-wider flex items-center gap-3 pl-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                    </span>
+                    <span class="hidden sm:inline">3D SHOWCASE PRO</span>
+                    <span class="sm:hidden">PRO</span>
+                </h1>
+                <div class="flex items-center space-x-2">
+                    <label for="model-upload" class="bg-blue-600 hover:bg-blue-500 text-white text-xs md:text-sm font-semibold py-2 px-4 rounded-full shadow-lg cursor-pointer transition-all duration-300 ease-out active:scale-95 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        <span class="hidden md:inline">Upload .glb</span>
+                    </label>
+                    <input type="file" id="model-upload" accept=".glb" class="hidden">
+                     <button id="fullscreen-btn" class="bg-white/10 hover:bg-white/20 text-white font-semibold p-2.5 rounded-full shadow-lg transition-all duration-300 ease-out active:scale-90 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 110 2H5v3a1 1 0 11-2 0V4zm14 0a1 1 0 00-1-1h-4a1 1 0 100 2h3v3a1 1 0 102 0V4zm-1 11h-3a1 1 0 100 2h4a1 1 0 001-1v-4a1 1 0 10-2 0v3zM5 15h3a1 1 0 100-2H4a1 1 0 00-1 1v4a1 1 0 102 0v-3z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <button id="rotate-btn" class="bg-white/10 hover:bg-white/20 text-blue-400 font-semibold p-2.5 rounded-full shadow-lg transition-all duration-300 ease-out active:scale-90 flex items-center justify-center" title="Toggle Auto-Rotate">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+        </div>
+
+        <!-- Right Side: Blender-style Viewport Tools -->
+        <div class="pointer-events-auto absolute right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 bg-white/5 backdrop-blur-2xl border border-white/10 p-2 rounded-3xl shadow-xl toolbar-enter z-50 hideable">
+            <!-- Reset Camera -->
+            <button id="tool-camera" class="tool-btn bg-white/5 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="tooltip">Reset View</span>
+            </button>
+            <div class="h-px w-full bg-white/10"></div>
+            <!-- Toggle Wireframe -->
+            <button id="tool-wireframe" class="tool-btn bg-white/5 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
+                <span class="tooltip">Wireframe Mode</span>
+            </button>
+            <!-- Toggle Environment Light -->
+            <button id="tool-env" class="tool-btn bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 p-3 rounded-full transition-all active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                <span class="tooltip">HDRI Settings</span>
+            </button>
+            <!-- Toggle Grid -->
+            <button id="tool-grid" class="tool-btn bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 p-3 rounded-full transition-all active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                <span class="tooltip">Toggle Grid</span>
+            </button>
+        </div>
+
+        <!-- HDR Selector Sub-Panel -->
+        <div id="hdr-panel" class="pointer-events-auto absolute right-24 top-1/2 transform -translate-y-1/2 bg-white/10 backdrop-blur-3xl border border-white/20 p-3 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-1 transition-all duration-300 opacity-0 pointer-events-none scale-90 origin-right z-40 w-56 hideable">
+            <div class="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-1 pl-2 pt-1">Lighting & Environment</div>
+            <!-- Options injected via JS -->
+        </div>
+
+        <!-- Animation Controller (Hidden by default) -->
+        <div id="anim-controller" class="pointer-events-auto absolute bottom-28 left-1/2 transform -translate-x-1/2 bg-white/10 backdrop-blur-3xl border border-white/20 px-6 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.5)] flex items-center gap-4 hidden z-20 hideable">
+            <span class="text-sm font-semibold text-white/80 uppercase tracking-widest text-xs">Animation</span>
+            <div class="h-4 w-px bg-white/20"></div>
+            <button id="btn-play-pause" class="text-white hover:text-blue-400 transition-colors focus:outline-none active:scale-90">
+                <svg id="icon-pause" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg id="icon-play" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </button>
+            <button id="btn-stop" class="text-white hover:text-red-400 transition-colors focus:outline-none active:scale-90">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+            </button>
+        </div>
+
+        <!-- Bottom Dock -->
+        <footer class="pointer-events-auto mb-6 mx-auto w-11/12 max-w-5xl bg-white/5 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.6)] rounded-[32px] p-4 flex flex-col gap-2 transition-all duration-500 hover:bg-white/10 hideable">
+             <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mb-1"></div> 
+             
+             <div class="flex items-center gap-2 w-full relative">
+                 <button id="scroll-left" class="hidden md:flex absolute -left-2 z-20 flex-shrink-0 bg-white/10 hover:bg-white/30 backdrop-blur-md border border-white/10 text-white p-2.5 rounded-full shadow-lg transition-all active:scale-90 items-center justify-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                 </button>
+
+                 <div id="model-selector" class="model-selector-container cursor-grab w-full overflow-x-auto whitespace-nowrap flex gap-3 pb-2 pt-1 px-4 md:px-8">
+                    <!-- Model buttons injected here -->
+                 </div>
+
+                 <button id="scroll-right" class="hidden md:flex absolute -right-2 z-20 flex-shrink-0 bg-white/10 hover:bg-white/30 backdrop-blur-md border border-white/10 text-white p-2.5 rounded-full shadow-lg transition-all active:scale-90 items-center justify-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                 </button>
              </div>
         </footer>
+
+        <!-- Zen Mode Toggle Button -->
+        <button id="zen-btn" class="pointer-events-auto absolute bottom-6 right-6 md:bottom-8 md:right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-3xl border border-white/20 p-3.5 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white transition-all active:scale-90" title="Toggle UI Visibility">
+            <svg id="icon-eye-open" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <svg id="icon-eye-closed" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+        </button>
+
     </div>
     
-    <!-- Three.js and GLTFLoader -->
+    <!-- Three.js Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -124,121 +271,330 @@
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
-        // --- Model Data ---
-        const GITHUB_REPO_URL = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/';
+        const GITHUB_REPO_URL = 'https://raw.githubusercontent.com/A-Santhosh-Hub/My-Blender-3D-Models/main/models/';
         const defaultModels = [
-         // --- Add Model Data ---
-                { name: 'Mobile ', url: 'models/New_Mobile.glb' },
-                { name: 'Laptop ', url: 'models/laptop.glb' },
-                { name: 'VLC ', url: 'models/safe.glb' },
-                { name: 'S24', url: 'models/S24.glb' },
-                { name: 'Sword ', url: 'models/Sword.glb' },        
-                { name: 'Shovel Dig Digging  ', url: 'models/Digtool.glb' },
-                { name: 'Fan ', url: 'models/Fan.glb' },
-                { name: 'House ', url: 'models/house test.glb' },
-                { name: 'THE CLASS', url: 'models/THE CLASS.glb' },
-                { name: 'Mobile Charger', url: 'models/charger.glb' },
-                { name: 'THE ROOM', url: 'models/THE ROOM.glb' },
-                //{ name: 'The Village', url: 'models/villag.glb' },
-                { name: 'Leef', url: 'models/Leef_31.glb' },
-                { name: 'Wind Mill', url: 'models/wind mill.glb' },
-                { name: 'Electric current post', url: 'models/Electric current post.glb' },
-                { name: 'Water Tank', url: 'models/Tank.glb' },
-                { name: 'Scall', url: 'models/Scall.glb' },
-                { name: 'Sniper', url: 'models/sniper.glb' },
-                { name: 'Rocket Launcher', url: 'models/Rocket Launcher.glb' },
-                // { name: 'Light House ', url: 'models/lightouse.glb' }
-                { name: 'Drone', url: 'models/Dron.glb' },
-                { name: 'AK-47', url: 'models/AK-47.glb'},
-                { name: 'Moniitor', url: 'models/SanStudi Moniter_v1.glb'}
-
-
-               
-        // --- Add Model Data ---
-
-
+            { name: '2022', url: GITHUB_REPO_URL + '2022.glb' },
+            { name: 'AK-47', url: GITHUB_REPO_URL + 'AK-47.glb' },
+            { name: 'Digtool', url: GITHUB_REPO_URL + 'Digtool.glb' },
+            { name: 'Dron', url: GITHUB_REPO_URL + 'Dron.glb' },
+            { name: 'Electric Post', url: GITHUB_REPO_URL + 'Electric%20current%20post.glb' },
+            { name: 'Fan', url: GITHUB_REPO_URL + 'Fan.glb' },
+            { name: 'Leef 31', url: GITHUB_REPO_URL + 'Leef_31.glb' },
+            { name: 'Loptop', url: GITHUB_REPO_URL + 'Loptop.glb' },
+            { name: 'Loptop 001', url: GITHUB_REPO_URL + 'Loptop_001.glb' },
+            { name: 'MOBIL', url: GITHUB_REPO_URL + 'MOBIL.glb' },
+            { name: 'New Mobile', url: GITHUB_REPO_URL + 'New_Mobile.glb' },
+            { name: 'Rocket Launcher', url: GITHUB_REPO_URL + 'Rocket%20Launcher.glb' },
+            { name: 'S24', url: GITHUB_REPO_URL + 'S24.glb' },
+            { name: 'Monitor', url: GITHUB_REPO_URL + 'SanStudi%20Moniter_v1.glb' },
+            { name: 'Scall', url: GITHUB_REPO_URL + 'Scall.glb' },
+            { name: 'Sword', url: GITHUB_REPO_URL + 'Sword.glb' },
+            { name: 'THE CLASS', url: GITHUB_REPO_URL + 'THE%20CLASS.glb' },
+            { name: 'THE ROOM', url: GITHUB_REPO_URL + 'THE%20ROOM.glb' },
+            { name: 'Tank', url: GITHUB_REPO_URL + 'Tank.glb' },
+            { name: 'Car 1', url: GITHUB_REPO_URL + 'car1.glb' },
+            { name: 'Charger', url: GITHUB_REPO_URL + 'charger.glb' },
+            { name: 'House Test', url: GITHUB_REPO_URL + 'house%20test.glb' },
+            { name: 'House Test 1', url: GITHUB_REPO_URL + 'house%20test1.glb' },
+            { name: 'House', url: GITHUB_REPO_URL + 'house.glb' },
+            { name: 'Laptop', url: GITHUB_REPO_URL + 'laptop.glb' },
+            { name: 'Lighthouse', url: GITHUB_REPO_URL + 'lightouse.glb' },
+            { name: 'Modul', url: GITHUB_REPO_URL + 'modul.glb' },
+            { name: 'Safe', url: GITHUB_REPO_URL + 'safe.glb' },
+            { name: 'Sniper', url: GITHUB_REPO_URL + 'sniper.glb' },
+            { name: 'Village', url: GITHUB_REPO_URL + 'villag.glb' },
+            { name: 'Wind Mill', url: GITHUB_REPO_URL + 'wind%20mill.glb' }
         ];
 
-        // --- Basic Setup ---
+        // UI Elements
         const canvasContainer = document.getElementById('canvas-container');
         const loaderElement = document.getElementById('loader');
         const modelSelector = document.getElementById('model-selector');
-        let scene, camera, renderer, controls, model;
+        const errorToast = document.getElementById('error-toast');
+        const errorMessage = document.getElementById('error-message');
+        const statTris = document.getElementById('stat-tris');
+        const statObjs = document.getElementById('stat-objs');
+        const statsPanel = document.getElementById('model-stats');
+        const animController = document.getElementById('anim-controller');
+        
+        let scene, camera, renderer, controls, model, mixer, activeAction;
+        let pmremGenerator, envTexture, basicLights = [];
+        let gridHelper, axesHelper;
+        
+        // HDRI Data - Switched to GitHub CDN source since NPM package excludes textures
+        const HDR_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r164/examples/textures/equirectangular/';
+        const hdrEnvironments = [
+            { id: 'studio', name: 'Studio (Default)', url: null, type: 'room' },
+            { id: 'venice', name: 'Venice Sunset', url: HDR_BASE + 'venice_sunset_1k.hdr', type: 'hdr' },
+            { id: 'royal', name: 'Royal Esplanade', url: HDR_BASE + 'royal_esplanade_1k.hdr', type: 'hdr' },
+            { id: 'overpass', name: 'Overpass', url: HDR_BASE + 'pedestrian_overpass_1k.hdr', type: 'hdr' },
+            { id: 'none', name: 'None (Basic Lights)', url: null, type: 'none' }
+        ];
+        
+        // State
+        const state = {
+            wireframe: false,
+            grid: true,
+            currentEnv: 'studio',
+            isHdrPanelOpen: false,
+            isPlaying: true
+        };
+        const clock = new THREE.Clock();
 
         function init() {
-            // Scene
             scene = new THREE.Scene();
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1, 5);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.5, 5);
 
-            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMappingExposure = 1.0;
+            renderer.outputColorSpace = THREE.SRGBColorSpace; 
             canvasContainer.appendChild(renderer.domElement);
+
+            // Setup Realistic Environment (Blender Style)
+            pmremGenerator = new THREE.PMREMGenerator(renderer);
+            pmremGenerator.compileEquirectangularShader();
+            envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+            scene.environment = envTexture; // Set default to HDRI lighting
+
+            // Setup Basic Lighting (Fallback)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(5, 10, 7.5);
+            const pointLight = new THREE.PointLight(0xADD8E6, 2, 100);
+            pointLight.position.set(-5, -5, 5);
+            basicLights = [ambientLight, directionalLight, pointLight];
+
+            // Setup Helpers
+            gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x222222);
+            gridHelper.position.y = -1.5; // Offset to sit under typical models
+            scene.add(gridHelper);
 
             // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.screenSpacePanning = false;
-            controls.minDistance = 1;
-            controls.maxDistance = 50;
-            controls.autoRotate = false;
-            controls.autoRotateSpeed = 0.5;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.0;
+            controls.maxDistance = 20;
 
-            // --- Lighting ---
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-            directionalLight.position.set(5, 10, 7.5);
-            scene.add(directionalLight);
-            
-            const pointLight = new THREE.PointLight(0xADD8E6, 2, 100);
-            pointLight.position.set(-5, -5, 5);
-            scene.add(pointLight);
-
-            // --- UI Setup ---
             setupModelSelector();
+            setupHdrPanel();
+            if(defaultModels.length > 0) loadModel(defaultModels[0].url);
 
-            // --- Load Initial Model ---
-            loadModel(defaultModels[0].url);
-
-            // --- Event Listeners ---
+            // Event Listeners
             window.addEventListener('resize', onWindowResize, false);
             document.getElementById('model-upload').addEventListener('change', onFileSelect);
             document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+            document.getElementById('rotate-btn').addEventListener('click', toggleRotation);
+            
+            // Toolbar Listeners
+            document.getElementById('tool-camera').addEventListener('click', resetCamera);
+            document.getElementById('tool-wireframe').addEventListener('click', toggleWireframe);
+            document.getElementById('tool-grid').addEventListener('click', toggleGrid);
+            document.getElementById('tool-env').addEventListener('click', toggleHdrPanel);
+            
+            // Zen Mode Listener
+            document.getElementById('zen-btn').addEventListener('click', toggleZenMode);
 
+            // Animation Listeners
+            document.getElementById('btn-play-pause').addEventListener('click', toggleAnimation);
+            document.getElementById('btn-stop').addEventListener('click', stopAnimation);
+
+            setupScrollControls();
             animate();
         }
 
-        function setupModelSelector() {
-            defaultModels.forEach(modelData => {
-                const button = document.createElement('button');
-                button.className = 'inline-block text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 mx-1 flex-shrink-0';
-                button.textContent = modelData.name;
-                button.addEventListener('click', () => loadModel(modelData.url));
-                modelSelector.appendChild(button);
+        // --- Blender-style Tools ---
+        function resetCamera() {
+            camera.position.set(0, 1.5, 5);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function toggleWireframe() {
+            state.wireframe = !state.wireframe;
+            const btn = document.getElementById('tool-wireframe');
+            btn.className = state.wireframe 
+                ? 'tool-btn bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 p-3 rounded-full transition-all active:scale-90'
+                : 'tool-btn bg-white/5 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 text-white';
+            
+            if (model) {
+                model.traverse((child) => {
+                    if (child.isMesh && child.material) {
+                        child.material.wireframe = state.wireframe;
+                    }
+                });
+            }
+        }
+
+        function toggleGrid() {
+            state.grid = !state.grid;
+            gridHelper.visible = state.grid;
+            const btn = document.getElementById('tool-grid');
+            btn.className = state.grid 
+                ? 'tool-btn bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 p-3 rounded-full transition-all active:scale-90'
+                : 'tool-btn bg-white/5 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 text-white';
+        }
+
+        // --- Zen Mode Control ---
+        function toggleZenMode() {
+            const uiContainer = document.getElementById('ui-container');
+            const isHidden = uiContainer.classList.toggle('ui-hidden');
+            
+            if (isHidden) {
+                document.getElementById('icon-eye-open').classList.add('hidden');
+                document.getElementById('icon-eye-closed').classList.remove('hidden');
+            } else {
+                document.getElementById('icon-eye-open').classList.remove('hidden');
+                document.getElementById('icon-eye-closed').classList.add('hidden');
+            }
+        }
+
+        // --- HDRI & Environment Controls ---
+        function setupHdrPanel() {
+            const panel = document.getElementById('hdr-panel');
+            hdrEnvironments.forEach(env => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/10 active:scale-95 ' + (env.id === state.currentEnv ? 'bg-blue-500/20 text-blue-400' : 'text-white/80');
+                btn.textContent = env.name;
+                btn.addEventListener('click', () => {
+                    // Update active button styling
+                    Array.from(panel.children).forEach(c => {
+                        if(c.tagName === 'BUTTON') c.className = 'w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/10 active:scale-95 text-white/80';
+                    });
+                    btn.className = 'w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-white/10 active:scale-95 bg-blue-500/20 text-blue-400';
+                    
+                    loadEnvironment(env);
+                    toggleHdrPanel(); // Close panel after selection
+                });
+                panel.appendChild(btn);
             });
         }
 
+        function toggleHdrPanel() {
+            const panel = document.getElementById('hdr-panel');
+            state.isHdrPanelOpen = !state.isHdrPanelOpen;
+            
+            if (state.isHdrPanelOpen) {
+                panel.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                panel.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
+            } else {
+                panel.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
+                panel.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+            }
+        }
+
+        function loadEnvironment(env) {
+            state.currentEnv = env.id;
+            const toolBtn = document.getElementById('tool-env');
+            
+            if (env.type === 'none') {
+                scene.environment = null;
+                scene.background = null; // Clear world background
+                basicLights.forEach(l => scene.add(l));
+                toolBtn.className = 'tool-btn bg-white/5 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 text-white';
+                return;
+            }
+            
+            toolBtn.className = 'tool-btn bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 p-3 rounded-full transition-all active:scale-90';
+            basicLights.forEach(l => scene.remove(l));
+
+            if (env.type === 'room') {
+                scene.environment = envTexture;
+                scene.background = null; // Revert to sleek dark UI background for Studio mode
+                return;
+            }
+
+            if (env.type === 'hdr') {
+                loaderElement.classList.remove('hidden');
+                new RGBELoader().load(env.url, function (texture) {
+                    // Map the HDR as a 360-degree sphere around the scene
+                    texture.mapping = THREE.EquirectangularReflectionMapping; 
+                    
+                    scene.environment = texture; // Apply to lighting/reflections
+                    scene.background = texture;  // Apply to the visible world background
+                    
+                    loaderElement.classList.add('hidden');
+                }, undefined, function (err) {
+                    showError('Failed to load HDRI file.');
+                    loaderElement.classList.add('hidden');
+                });
+            }
+        }
+
+        // --- Animation Control ---
+        function toggleAnimation() {
+            if(!activeAction) return;
+            state.isPlaying = !state.isPlaying;
+            activeAction.paused = !state.isPlaying;
+            
+            document.getElementById('icon-pause').classList.toggle('hidden');
+            document.getElementById('icon-play').classList.toggle('hidden');
+        }
+
+        function stopAnimation() {
+            if(!activeAction) return;
+            activeAction.reset();
+            activeAction.stop();
+            state.isPlaying = false;
+            document.getElementById('icon-pause').classList.add('hidden');
+            document.getElementById('icon-play').classList.remove('hidden');
+        }
+
+        // --- Core Functions ---
         function loadModel(url) {
             const loader = new GLTFLoader();
             loaderElement.classList.remove('hidden');
+            statsPanel.classList.add('hidden');
+            animController.classList.add('hidden');
+            animController.classList.remove('anim-ctrl-enter');
             
             if (model) {
                 scene.remove(model);
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        child.geometry.dispose();
+                        if (child.material.isMaterial) child.material.dispose();
+                    }
+                });
+            }
+            if (mixer) {
+                mixer.stopAllAction();
+                mixer = null;
+                activeAction = null;
             }
 
             loader.load(url, (gltf) => {
                 model = gltf.scene;
+                
+                // Calculate Stats
+                let polygons = 0;
+                let objects = 0;
+                
+                model.traverse((child) => {
+                    if (child.isMesh) {
+                        objects++;
+                        if (child.geometry.index) polygons += child.geometry.index.count / 3;
+                        else if (child.geometry.attributes.position) polygons += child.geometry.attributes.position.count / 3;
+                        
+                        // Apply current wireframe state
+                        if(child.material) child.material.wireframe = state.wireframe;
+                    }
+                });
+                
+                statTris.textContent = polygons.toLocaleString(undefined, {maximumFractionDigits: 0});
+                statObjs.textContent = objects.toLocaleString();
+                statsPanel.classList.remove('hidden');
 
+                // Center/Scale logic
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
@@ -248,13 +604,78 @@
                 model.scale.set(scale, scale, scale);
                 model.position.sub(center.multiplyScalar(scale));
                 
+                // Adjust Grid position to bottom of model bounding box
+                gridHelper.position.y = (box.min.y - center.y) * scale;
+                
                 scene.add(model);
+                
+                // Animations Setup
+                if (gltf.animations && gltf.animations.length > 0) {
+                    mixer = new THREE.AnimationMixer(model);
+                    activeAction = mixer.clipAction(gltf.animations[0]);
+                    activeAction.play();
+                    state.isPlaying = true;
+                    
+                    document.getElementById('icon-pause').classList.remove('hidden');
+                    document.getElementById('icon-play').classList.add('hidden');
+                    
+                    animController.classList.remove('hidden');
+                    // Small delay to allow display:block before animating
+                    setTimeout(() => animController.classList.add('anim-ctrl-enter'), 10);
+                }
+
+                resetCamera();
                 loaderElement.classList.add('hidden');
-            }, undefined, (error) => {
-                console.error(error);
-                alert('An error happened while loading the model.');
+            }, 
+            undefined, 
+            (error) => {
+                showError('Failed to load model.');
                 loaderElement.classList.add('hidden');
             });
+        }
+
+        // --- Standard UI Functions ---
+        function setupScrollControls() {
+            const scrollLeftBtn = document.getElementById('scroll-left');
+            const scrollRightBtn = document.getElementById('scroll-right');
+            let isDown = false, startX, scrollLeft;
+
+            scrollLeftBtn.addEventListener('click', () => modelSelector.scrollBy({ left: -300, behavior: 'smooth' }));
+            scrollRightBtn.addEventListener('click', () => modelSelector.scrollBy({ left: 300, behavior: 'smooth' }));
+
+            modelSelector.addEventListener('mousedown', (e) => {
+                isDown = true;
+                modelSelector.classList.add('cursor-grabbing');
+                startX = e.pageX - modelSelector.offsetLeft;
+                scrollLeft = modelSelector.scrollLeft;
+            });
+            modelSelector.addEventListener('mouseleave', () => { isDown = false; modelSelector.classList.remove('cursor-grabbing'); });
+            modelSelector.addEventListener('mouseup', () => { isDown = false; modelSelector.classList.remove('cursor-grabbing'); });
+            modelSelector.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                modelSelector.scrollLeft = scrollLeft - ((e.pageX - modelSelector.offsetLeft) - startX) * 1.5;
+            });
+        }
+
+        function setupModelSelector() {
+            defaultModels.forEach(modelData => {
+                const button = document.createElement('button');
+                button.className = 'inline-flex items-center justify-center bg-white/5 hover:bg-white/15 border border-white/5 text-white/90 font-medium py-3 px-6 rounded-2xl shadow-sm transition-all duration-300 ease-out active:scale-90 focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex-shrink-0 text-sm md:text-base';
+                button.textContent = modelData.name;
+                button.addEventListener('click', () => loadModel(modelData.url));
+                modelSelector.appendChild(button);
+            });
+        }
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorToast.classList.remove('hidden');
+            errorToast.classList.add('toast-enter');
+            setTimeout(() => {
+                errorToast.classList.add('hidden');
+                errorToast.classList.remove('toast-enter');
+            }, 5000);
         }
 
         function onFileSelect(event) {
@@ -262,6 +683,7 @@
             if (file) {
                 const url = URL.createObjectURL(file);
                 loadModel(url);
+                event.target.value = '';
             }
         }
 
@@ -272,22 +694,25 @@
         }
 
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-            }
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+            else if (document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function toggleRotation() {
+            controls.autoRotate = !controls.autoRotate;
+            const btn = document.getElementById('rotate-btn');
+            controls.autoRotate ? btn.classList.replace('text-white', 'text-blue-400') : btn.classList.replace('text-blue-400', 'text-white');
         }
 
         function animate() {
             requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
             controls.update();
             renderer.render(scene, camera);
         }
 
-        init();
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
